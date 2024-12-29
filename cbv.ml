@@ -1,20 +1,10 @@
 open Term
 
-let t_true = Abs("mt", Abs("mf", Var("mt")))
-let t_false = Abs("mt", Abs("mf", Var("mf")))
-let t_id = Abs("x", Var("x"))
-let t_let (x, v, e) = Ap(Abs(x, e), v)
-let t_seq (e1, e2) = t_let("_", e1, e2)
-let t_put0 = Ap(Extern("put0"), t_id)
-let t_put1 = Ap(Extern("put1"), t_id)
-let t_get = Ap(Extern("get"), t_id)
-let t_ite(cond, t, e) = Ap(Ap(Ap(cond, Abs("_unit", t)), Abs("_unit", e)), t_id)
-let t_Z = Abs("f",
-              Ap(
-                Abs("x", Ap(Var "f", Abs("v", Ap(Ap(Var "x", Var "x"), Var "v")))),
-                Abs("x", Ap(Var "f", Abs("v", Ap(Ap(Var "x", Var "x"), Var "v"))))
-              )
-             )
+let parse (s : string) =
+  Parser.main Lexer.token (Lexing.from_string s)
+
+let t_true = parse "λ mt. λ mf. mt"
+let t_false = parse "λ mt. λ mf. mf"
 
 let print_term (t : term) =
   let rec print_aux (t : term) (needs_parens : bool) =
@@ -58,33 +48,44 @@ let rec eval_term (t : term) =
     )
   | _ -> t
 
-let e1 = Ap(Abs("a", (Ap(Var "a", Var "a"))), Extern "C")
-let e2 = Ap(Abs("f", Abs("x", Ap(Var "f", Var "x"))),
-            Abs("f", Abs("x", Ap(Var "f", Var "x"))))
-let e3 = t_seq(t_put0, t_put1)
-let e4 = Ap(Ap(Ap(t_get, Extern("put1")), Extern("put0")), t_id)
+let wrapper = parse {|
+    λ f.
+    let tt := (λx.x) in
+    let true := (λ mt. λ mf. mt) in
+    let false := (λ mt. λ mf. mf) in
+    let put := (λ b. b @put1 @put0 tt) in
+    let fix := λ f.(λx. f(λv. x x v)) (λx. f(λv. x x v)) in
+    f tt
+|}
 
-let e5 = Ap(Ap(t_Z,
-               Abs("fZ",
-                   Abs("iter_again",
-                       t_ite(Var "iter_again",
-                             t_seq(t_put0, Ap(Var "fZ", t_false)),
-                             t_id
-                            )
-                      )
-                  )
-              ),
-            t_true)
+let parse' (s : string) = Ap(wrapper, (parse s))
 
-let e6 = Ap(Ap(t_Z,
-               Abs("fZ",
-                   Abs("_",
-                       t_seq(Ap(Ap(Ap(t_get, Extern("put1")), Extern("put0")), t_id),
-                             Ap(Var "fZ", t_id))
-                      )
-                  )
-              ),
-            t_id)
+let eval_term' (s : string) =
+  let t = parse' s in
+  print_term t;
+  print_newline ();
+  let t' = eval_term t in
+  print_newline ();
+  print_term t'
+
+let e1 = parse "(λ a. (a a)) @C"
+let e2 = parse "let y := (λ f. λ x. f x) in (y y)"
+let e3 = parse {|
+let tt := (λx. x) in
+@put0 tt;
+@put1 tt
+|}
+let e4 = parse "@get (λ x. x) @put1 @put0 (λx. x)"
+
+let e5 = parse' {| λ _.
+  fix (λ recur. λ iter_again.
+       iter_again (λ _. put true; recur false) (λ _. tt) tt
+  ) true
+|}
+
+let e6 = parse' {| λ _.
+    fix (λ recur. λ _.put (@get ()); recur ()) ()
+|}
 
 let test e =
   print_newline ();
@@ -96,12 +97,10 @@ let test e =
   print_term ep;
   print_newline ()
 
-let parse (s : string) =
-  Parser.main Lexer.token (Lexing.from_string s)
-
 let () =
-  let e0 = parse "(λ f. λ x. f x) (λ f. λ x. f x)" in
-  test e0;
+  print_term (parse "λ _ . a b; c d");
+  print_newline ();
+  eval_term' "λ _ . put false; put true; put true; put true";
   test e1;
   test e2;
   test e3;
