@@ -1,5 +1,4 @@
-type term =
-  Extern of string | Var of string | Ap of (term * term) | Abs of (string * term)
+open Term
 
 let t_true = Abs("mt", Abs("mf", Var("mt")))
 let t_false = Abs("mt", Abs("mf", Var("mf")))
@@ -37,12 +36,6 @@ let print_term (t : term) =
   in
   print_aux t false
 
-type token =
-  | TokLambda
-  | TokDot
-  | TokIdent
-  | TokExternIdent
-
 let rec subst (t : term) (x : string) (v : term) =
   match t with
   | Var y -> if x = y then v else t
@@ -68,7 +61,6 @@ let rec eval_term (t : term) =
 let e1 = Ap(Abs("a", (Ap(Var "a", Var "a"))), Extern "C")
 let e2 = Ap(Abs("f", Abs("x", Ap(Var "f", Var "x"))),
             Abs("f", Abs("x", Ap(Var "f", Var "x"))))
-let e3 = t_seq(t_put0, t_put1)
 let e3 = t_seq(t_put0, t_put1)
 let e4 = Ap(Ap(Ap(t_get, Extern("put1")), Extern("put0")), t_id)
 
@@ -104,7 +96,12 @@ let test e =
   print_term ep;
   print_newline ()
 
+let parse (s : string) =
+  Parser.main Lexer.token (Lexing.from_string s)
+
 let () =
+  let e0 = parse "(λ f. λ x. f x) (λ f. λ x. f x)" in
+  test e0;
   test e1;
   test e2;
   test e3;

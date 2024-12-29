@@ -1,0 +1,5 @@
+(executable (name cbv)
+ (modes byte)
+)
+(ocamllex lexer)
+(ocamlyacc parser)
