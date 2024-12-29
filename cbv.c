@@ -96,20 +96,22 @@ struct term *term_let(uint64_t x, struct term *v, struct term *e) {
 }
 
 struct term *term_seq(struct term *e1, struct term *e2) {
-    return term_let(UINT64_MAX, e1, e2);
+  return term_let(UINT64_MAX, e1, e2);
 }
 
 struct term *term_Z() {
-    uint64_t f = 0, x = 1, v = 2;
-    return term_abs(
-        f, term_ap(term_abs(x, term_ap(term_var(f),
-                                       term_abs(v, term_ap(term_ap(term_var(x),
-                                                                   term_var(x)),
-                                                           term_var(v))))),
-                   term_abs(x, term_ap(term_var(f),
-                                       term_abs(v, term_ap(term_ap(term_var(x),
-                                                                   term_var(x)),
-                                                           term_var(v)))))));
+  uint64_t f = 0, x = 1, v = 2;
+  return term_abs(
+      f,
+      term_ap(
+          term_abs(
+              x, term_ap(term_var(f),
+                         term_abs(v, term_ap(term_ap(term_var(x), term_var(x)),
+                                             term_var(v))))),
+          term_abs(
+              x, term_ap(term_var(f),
+                         term_abs(v, term_ap(term_ap(term_var(x), term_var(x)),
+                                             term_var(v)))))));
 }
 
 struct term *term_clone(struct term *t) {

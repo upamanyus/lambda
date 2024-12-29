@@ -43,11 +43,6 @@ type token =
   | TokIdent
   | TokExternIdent
 
-let parse_term (x : string) =
-  let rec lex (x : string) (i : nat) =
-    if String.starts_with ~"λ" x
-      TokLambda :: (lex x i)
-
 let rec subst (t : term) (x : string) (v : term) =
   match t with
   | Var y -> if x = y then v else t
