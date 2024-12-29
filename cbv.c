@@ -99,6 +99,19 @@ struct term *term_seq(struct term *e1, struct term *e2) {
     return term_let(UINT64_MAX, e1, e2);
 }
 
+struct term *term_Z() {
+    uint64_t f = 0, x = 1, v = 2;
+    return term_abs(
+        f, term_ap(term_abs(x, term_ap(term_var(f),
+                                       term_abs(v, term_ap(term_ap(term_var(x),
+                                                                   term_var(x)),
+                                                           term_var(v))))),
+                   term_abs(x, term_ap(term_var(f),
+                                       term_abs(v, term_ap(term_ap(term_var(x),
+                                                                   term_var(x)),
+                                                           term_var(v)))))));
+}
+
 struct term *term_clone(struct term *t) {
   struct term *tp = term_new();
   tp->kind = t->kind;
@@ -108,6 +121,7 @@ struct term *term_clone(struct term *t) {
       break;
     case TERM_EXTERN:
       tp->ext = t->ext;
+      break;
     case TERM_AP:
       tp->ap.f = term_clone(t->ap.f);
       tp->ap.v = term_clone(t->ap.v);
@@ -184,8 +198,8 @@ struct term *term_eval(struct term *t) {
           term_free(v);
           switch (ext) {
             case EXTERN_GET:
-              if (getchar() & 0) {
-                return term_true();
+              if ((getchar() & 1) == 0) {
+                return term_false();
               } else {
                 return term_true();
               }
@@ -269,5 +283,21 @@ int main() {
 
   t = term_seq(term_ap(term_ext(EXTERN_PUT0), term_unit()),
                term_ap(term_ext(EXTERN_PUT1), term_unit()));
+  test(t);
+
+  t = term_ap(
+      term_ap(
+          term_Z(),
+          term_abs(
+              f,
+              term_abs(
+                  UINT64_MAX,
+                  term_seq(term_ap(term_ap(term_ap(term_ap(term_ext(EXTERN_GET),
+                                                           term_unit()),
+                                                   term_ext(EXTERN_PUT1)),
+                                           term_ext(EXTERN_PUT0)),
+                                   term_unit()),
+                           term_ap(term_var(f), term_unit()))))),
+      term_unit());
   test(t);
 }
