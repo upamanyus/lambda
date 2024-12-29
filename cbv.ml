@@ -5,7 +5,7 @@ let t_true = Abs("mt", Abs("mf", Var("mt")))
 let t_false = Abs("mt", Abs("mf", Var("mf")))
 let t_id = Abs("x", Var("x"))
 let t_let (x, v, e) = Ap(Abs(x, e), v)
-let t_seq (e1, e2) = t_let("_let", e1, e2)
+let t_seq (e1, e2) = t_let("_", e1, e2)
 let t_put0 = Ap(Extern("put0"), t_id)
 let t_put1 = Ap(Extern("put1"), t_id)
 let t_get = Ap(Extern("get"), t_id)
@@ -37,25 +37,16 @@ let print_term (t : term) =
   in
   print_aux t false
 
+type token =
+  | TokLambda
+  | TokDot
+  | TokIdent
+  | TokExternIdent
+
 let parse_term (x : string) =
-  let lex (x : string) =
-    let rec lex_aux (x : string) (start : int) =
-    for pos = 0 to String.length x do
-      ()
-    done
-    in
-
-  let pos = ref 0 in
-  let get_char () = String.get pos in
-  let parse_arg () =
-    let arg_start = pos in
-    let arg_end = String.index_from x arg_start '.' in
-    let arg_len = (arg_end - arg_start) + 1
-    pos := arg_end;
-    String.sub arg_start arg_end
-  in
-  if String.get x 0 = 'λ' then
-
+  let rec lex (x : string) (i : nat) =
+    if String.starts_with ~"λ" x
+      TokLambda :: (lex x i)
 
 let rec subst (t : term) (x : string) (v : term) =
   match t with
@@ -100,7 +91,7 @@ let e5 = Ap(Ap(t_Z,
 
 let e6 = Ap(Ap(t_Z,
                Abs("fZ",
-                   Abs("_unit",
+                   Abs("_",
                        t_seq(Ap(Ap(Ap(t_get, Extern("put1")), Extern("put0")), t_id),
                              Ap(Var "fZ", t_id))
                       )
@@ -109,11 +100,12 @@ let e6 = Ap(Ap(t_Z,
             t_id)
 
 let test e =
+  print_newline ();
+  print_string "Starting: "; print_term e;
+  print_newline ();
   let ep = eval_term e in
   print_newline ();
-  print_string "Trace:";
-  print_term e;
-  print_string " -> ";
+  print_string "Ending with: ";
   print_term ep;
   print_newline ()
 
